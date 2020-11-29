@@ -1,6 +1,8 @@
 # Bogert
 Playing around with some chess AI!
 
+"Let that clockwork contrapion solve the entire problem for you!"
+
 # TODO:
 
 - Order the possible moves such that takes are searched first, should increase the amount of pruning
