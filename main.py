@@ -309,14 +309,14 @@ def canvasRelease(event):
 		gameStateVar.set("End of game.")
 		root.update()
 		return
-	if (board.turn and p1 != "Human"): getAIMove()
-	elif (not board.turn and p2 != "Human"): getAIMove()
+	if (board.turn and p1 != "Human"): getAIMove(turn='White')
+	elif (not board.turn and p2 != "Human"): getAIMove(turn='Black')
    
 
 
 def AI_1(board):
 	'"Beep boop I am awful at Chess" - AI_1'
-
+	'de-de'
 	move_type = random.choice([1,2,3])
 	if move_type >1:
 		move = minimaxRoot(random.choice([2,3]), board, True)
@@ -327,14 +327,28 @@ def AI_1(board):
 
 def AI_2(board, white_move=False):
 	'"Beep boop I am slightly better at Chess... hopefully" - AI_2'
-
-	move = random.choice(list(board.legal_moves))
+	'do-do'
+	#move = random.choice(list(board.legal_moves))
 	move = minimaxRoot(3, board, board.turn)
 	# TODO: Add some noise or randomness into the move selection (normalize it beforehand by ?)
 	return move
 
+def AI_3(board):
+	'mo-mo'
+	move = minimaxRoot(3, board, board.turn, square_bonus = True)
 
-def getAIMove():
+	return move
+
+def AI_4():
+	'me-me'
+	return None
+
+def AI_5():
+	'la-la'
+	return None
+
+
+def getAIMove(turn):
 	global board
 	global root
 	global canvasSize
@@ -370,20 +384,25 @@ def getAIMove():
 					lastpvmovestr = pvmovestr
 	#pvmove = analysis.info['pv'][0]
 
-	move = AI_2(board)
-	if move == 'No':
+	if turn == 'White':
+		move = AI_2(board)
+	else:
+		move = AI_3(board)
+
+	if move == 'No' or move is None:
 		gameStateVar.set("End of game.")
 		root.update()
 		gameinprogress = False
-		print(board)
+	else:
+		print(move)
+		board.push_uci(str(move))
+		drawBoard()
+		drawPieces()
 
-	print(move)
-	board.push_uci(str(move))
-	drawBoard()
-	drawPieces()
 
 	legalmoves = board.legal_moves
 	count = 0
+
 	for x in legalmoves:
 		count += 1
 	#print(count, legalmoves)
@@ -393,13 +412,12 @@ def getAIMove():
 		gameinprogress = False
 		print('no legal')
 
-		print(board)
 	else:
 		if (board.turn): gameStateVar.set("White to move.")
 		else: gameStateVar.set("Black to move.")
 		root.update()
-		if (p1 == "AI" and board.turn): getAIMove()
-		elif (p2 == "AI" and not board.turn): getAIMove()
+		if (p1 == "AI" and board.turn): getAIMove(turn='white')
+		elif (p2 == "AI" and not board.turn): getAIMove(turn='black')
 
 
 def redrawTile(x, y):
@@ -556,7 +574,7 @@ def initGame(player1, player2):
 	board = chess.Board()
 	gameinprogress = True
 	gameStateVar.set("White to move.")
-	if (p1 == "AI" and board.turn): getAIMove()
-	elif (p2 == "AI" and not board.turn): getAIMove()
+	if (p1 == "AI" and board.turn): getAIMove(turn='white')
+	elif (p2 == "AI" and not board.turn): getAIMove(turn='black')
 
 main()
