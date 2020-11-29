@@ -1,2 +1,2 @@
-# ravengui
-Raven Chess GUI
+# Bogert
+Playing around with some chess AI!
