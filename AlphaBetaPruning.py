@@ -46,10 +46,11 @@ def minimaxRoot(depth, board, is_maximizing, square_bonus = False):
     return best_move
 
 
-def random_possible_move(board):
+def random_possible_move(board, random_suffle=False):
 
     possible_moves = list(board.legal_moves)
-    random.shuffle(possible_moves)
+    if random_suffle:
+        random.shuffle(possible_moves)
     return possible_moves
 
 
@@ -60,6 +61,18 @@ def minimax(depth, board, alpha, beta, is_maximizing, square_bonus):
         return evaluation(board, square_bonus) , 0 # currently a simple summation of piece values
 
     possible_moves = random_possible_move(board)
+
+    # Iterative deepening (TODO - confirm this is actually making improvements, should be ~10%)
+    move_score_array = []
+    for move in possible_moves:
+        move_score_array.append([move,(evaluation(board, square_bonus))])
+    move_score_array = sorted(move_score_array, key=lambda x: x[1])
+    if is_maximizing:
+        move_score_array.reverse()
+
+    possible_moves = [item[0] for item in move_score_array]
+
+
     best_move_score = -9999 if is_maximizing else 9999
     best_move = None
     move_count = 0
