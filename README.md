@@ -1,7 +1,7 @@
 # Bogert
 Playing around with some chess AI!
 
-"Let that clockwork contrapion solve the entire problem for you!"
+"Let that clockwork contraption solve the entire problem for you!"
 
 # TODO:
 
