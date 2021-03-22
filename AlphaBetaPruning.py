@@ -3,12 +3,80 @@ import math
 import random
 import sys
 
+BOUNDS_DICT = {
+    "P": [0, 0, 0, 0, 0, 0, 0, 0,
+          50, 50, 50, 50, 50, 50, 50, 50,
+          10, 10, 20, 30, 30, 20, 10, 10,
+          5, 5, 10, 25, 25, 10, 5, 5,
+          0, 0, 0, 20, 20, 0, 0, 0,
+          5, -5, -10, 0, 0, -10, -5, 5,
+          5, 10, 10, -20, -20, 10, 10, 5,
+          0, 0, 0, 0, 0, 0, 0, 0],
+
+    "N": [-50, -40, -30, -30, -30, -30, -40, -50,
+          -40, -20, 0, 0, 0, 0, -20, -40,
+          -30, 0, 10, 15, 15, 10, 0, -30,
+          -30, 5, 15, 20, 20, 15, 5, -30,
+          -30, 0, 15, 20, 20, 15, 0, -30,
+          -30, 5, 10, 15, 15, 10, 5, -30,
+          -40, -20, 0, 5, 5, 0, -20, -40,
+          -50, -40, -30, -30, -30, -30, -40, -50, ],
+
+    "B": [-20, -10, -10, -10, -10, -10, -10, -20,
+          -10, 0, 0, 0, 0, 0, 0, -10,
+          -10, 0, 5, 10, 10, 5, 0, -10,
+          -10, 5, 5, 10, 10, 5, 5, -10,
+          -10, 0, 10, 10, 10, 10, 0, -10,
+          -10, 10, 10, 10, 10, 10, 10, -10,
+          -10, 5, 0, 0, 0, 0, 5, -10,
+          -20, -10, -10, -10, -10, -10, -10, -20, ],
+
+    "R": [0, 0, 0, 0, 0, 0, 0, 0,
+          5, 10, 10, 10, 10, 10, 10, 5,
+          -5, 0, 0, 0, 0, 0, 0, -5,
+          -5, 0, 0, 0, 0, 0, 0, -5,
+          -5, 0, 0, 0, 0, 0, 0, -5,
+          -5, 0, 0, 0, 0, 0, 0, -5,
+          -5, 0, 0, 0, 0, 0, 0, -5,
+          0, 0, 0, 5, 5, 0, 0, 0],
+
+    "Q": [-20, -10, -10, -5, -5, -10, -10, -20,
+          -10, 0, 0, 0, 0, 0, 0, -10,
+          -10, 0, 5, 5, 5, 5, 0, -10,
+          -5, 0, 5, 5, 5, 5, 0, -5,
+          0, 0, 5, 5, 5, 5, 0, -5,
+          -10, 5, 5, 5, 5, 5, 0, -10,
+          -10, 0, 5, 0, 0, 0, 0, -10,
+          -20, -10, -10, -5, -5, -10, -10, -20],
+
+    "K": [-30, -40, -40, -50, -50, -40, -40, -30,
+          -30, -40, -40, -50, -50, -40, -40, -30,
+          -30, -40, -40, -50, -50, -40, -40, -30,
+          -30, -40, -40, -50, -50, -40, -40, -30,
+          -20, -30, -30, -40, -40, -30, -30, -20,
+          -10, -20, -20, -20, -20, -20, -20, -10,
+          20, 20, 0, 0, 0, 0, 20, 20,
+          20, 30, 10, 0, 0, 10, 30, 20]}
+
 
 def minimaxRoot(depth, board, is_maximizing, square_bonus = False):
+
     possible_moves = random_possible_move(board)
     best_move_score = -9999 if is_maximizing else 9999
     best_move = None
     move_count = 0
+
+    move_score_array = []
+    for move in possible_moves:
+        move_score_array.append([move,(evaluation(board, square_bonus=False))])
+
+
+    move_score_array = sorted(move_score_array, key=lambda x: x[1])
+    if is_maximizing:
+        move_score_array.reverse()
+
+    possible_moves = [item[0] for item in move_score_array]
+
     for x in possible_moves:
         move = chess.Move.from_uci(str(x))
         move_count += 1
@@ -46,7 +114,7 @@ def minimaxRoot(depth, board, is_maximizing, square_bonus = False):
     return best_move
 
 
-def random_possible_move(board, random_suffle=False):
+def random_possible_move(board, random_suffle=False, ):
 
     possible_moves = list(board.legal_moves)
     if random_suffle:
@@ -54,7 +122,7 @@ def random_possible_move(board, random_suffle=False):
     return possible_moves
 
 
-def minimax(depth, board, alpha, beta, is_maximizing, square_bonus):
+def minimax(depth, board, alpha, beta, is_maximizing, square_bonus, iterative_deeping=False):
     # Reaching the maximum depth specified
     if depth == 0:
         # TODO - confused why the 'base' evaluation within the branch is always negated - assumed its wrt is_maximizing
@@ -63,15 +131,17 @@ def minimax(depth, board, alpha, beta, is_maximizing, square_bonus):
     possible_moves = random_possible_move(board)
 
     # Iterative deepening (TODO - confirm this is actually making improvements, should be ~10%)
-    move_score_array = []
-    for move in possible_moves:
-        move_score_array.append([move,(evaluation(board, square_bonus))])
-    move_score_array = sorted(move_score_array, key=lambda x: x[1])
-    if is_maximizing:
-        move_score_array.reverse()
+    # FIXME - nope, slows it way way down in terms of evals/sec (probably increases pruning count though?
+    #  -> the implementation is slow?
 
-    possible_moves = [item[0] for item in move_score_array]
-
+    if iterative_deeping:
+        move_score_array = []
+        for move in possible_moves:
+            move_score_array.append([move,(evaluation(board, square_bonus=False))])
+        move_score_array = sorted(move_score_array, key=lambda x: x[1])
+        if is_maximizing:
+            move_score_array.reverse()
+        possible_moves = [item[0] for item in move_score_array]
 
     best_move_score = -9999 if is_maximizing else 9999
     best_move = None
@@ -132,6 +202,7 @@ def evaluation(board, square_bonus):
                 if square_bonus:
                     board_total -= getPieceSqauareBonus(str(board.piece_at(i)), i, False)
 
+
     return board_total
 
 
@@ -151,68 +222,14 @@ def getPieceValue(piece):
 
     return piece_dict[piece.upper()]
 
+
 def getPieceSqauareBonus(piece, position, is_maximizing):
-
-    bonus_dict = {
-        "P": [ 0,  0,  0,  0,  0,  0,  0,  0,
-                50, 50, 50, 50, 50, 50, 50, 50,
-                10, 10, 20, 30, 30, 20, 10, 10,
-                 5,  5, 10, 25, 25, 10,  5,  5,
-                 0,  0,  0, 20, 20,  0,  0,  0,
-                 5, -5,-10,  0,  0,-10, -5,  5,
-                 5, 10, 10,-20,-20, 10, 10,  5,
-                 0,  0,  0,  0,  0,  0,  0,  0],
-
-        "N" : [-50,-40,-30,-30,-30,-30,-40,-50,
-                -40,-20,  0,  0,  0,  0,-20,-40,
-                -30,  0, 10, 15, 15, 10,  0,-30,
-                -30,  5, 15, 20, 20, 15,  5,-30,
-                -30,  0, 15, 20, 20, 15,  0,-30,
-                -30,  5, 10, 15, 15, 10,  5,-30,
-                -40,-20,  0,  5,  5,  0,-20,-40,
-                -50,-40,-30,-30,-30,-30,-40,-50,],
-
-        "B" : [-20,-10,-10,-10,-10,-10,-10,-20,
-                -10,  0,  0,  0,  0,  0,  0,-10,
-                -10,  0,  5, 10, 10,  5,  0,-10,
-                -10,  5,  5, 10, 10,  5,  5,-10,
-                -10,  0, 10, 10, 10, 10,  0,-10,
-                -10, 10, 10, 10, 10, 10, 10,-10,
-                -10,  5,  0,  0,  0,  0,  5,-10,
-                -20,-10,-10,-10,-10,-10,-10,-20,],
-
-        "R" : [  0,  0,  0,  0,  0,  0,  0,  0,
-                  5, 10, 10, 10, 10, 10, 10,  5,
-                 -5,  0,  0,  0,  0,  0,  0, -5,
-                 -5,  0,  0,  0,  0,  0,  0, -5,
-                 -5,  0,  0,  0,  0,  0,  0, -5,
-                 -5,  0,  0,  0,  0,  0,  0, -5,
-                 -5,  0,  0,  0,  0,  0,  0, -5,
-                  0,  0,  0,  5,  5,  0,  0,  0],
-
-        "Q" : [-20,-10,-10, -5, -5,-10,-10,-20,
-                -10,  0,  0,  0,  0,  0,  0,-10,
-                -10,  0,  5,  5,  5,  5,  0,-10,
-                 -5,  0,  5,  5,  5,  5,  0, -5,
-                  0,  0,  5,  5,  5,  5,  0, -5,
-                -10,  5,  5,  5,  5,  5,  0,-10,
-                -10,  0,  5,  0,  0,  0,  0,-10,
-                -20,-10,-10, -5, -5,-10,-10,-20],
-
-        "K": [-30,-40,-40,-50,-50,-40,-40,-30,
-                -30,-40,-40,-50,-50,-40,-40,-30,
-                -30,-40,-40,-50,-50,-40,-40,-30,
-                -30,-40,-40,-50,-50,-40,-40,-30,
-                -20,-30,-30,-40,-40,-30,-30,-20,
-                -10,-20,-20,-20,-20,-20,-20,-10,
-                 20, 20,  0,  0,  0,  0, 20, 20,
-                 20, 30, 10,  0,  0, 10, 30, 20]}
 
     if not is_maximizing:
         position = 63 - position
     pos = 64 - (position//8 + 1) * 8 + position-(position//8)*8  # TODO - fix this, think it is wrong!
     #print(piece, position,pos, bonus_dict[piece.upper()][pos])
-    return bonus_dict[piece.upper()][pos]
+    return BOUNDS_DICT[piece.upper()][pos]
 
 
 def main():
@@ -233,8 +250,6 @@ def main():
             print(move)
         print(board)
         n += 1
-
-
 
 
 
