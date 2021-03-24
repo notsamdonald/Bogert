@@ -1,6 +1,6 @@
 import fen_logic as fl
 import fen_settings as s
-
+import config as c
 
 class GameInstance:
     def __init__(self, starting_fen):
@@ -11,7 +11,92 @@ class GameInstance:
 
         self.piece_dict = self.initialize_piece_dict()
         self.initialize_piece_count_dict()
-        print('wait')
+        self.rook_columns_list, self.pawn_columns_list = [[], []], [[], []]
+        self.init_piece_columns()
+
+        # Fixme - must be a better way then calling the function + adding it here?
+        self.game_constants = {"A": [self.game_constant_A(), self.game_constant_A],
+                               "B": [self.game_constant_B(), self.game_constant_B]}
+        self.update_game_constants()
+
+        # Piece values (# note - currently just a running tally of the evaluation func for each piece)
+        self.piece_values = {'w': 0, 'b': 0}
+        self.init_piece_values()
+
+        # Init king positions
+        self.has_castled = {'w': False, 'b': False}
+        self.king_location = {'w': 0, 'b': 0}  # TODO - think about a better way to store this data vs multiple dicts
+        self.init_king_positions()  # TODO - think it would be good to have this done for all pieces
+
+        # Get possible moves for a certain piece type
+        self.possible_moves = []
+        self.move_functions = {'p': self.get_pawn_moves,
+                               'N': self.get_knight_moves,
+                               'B': self.get_bishop_moves,
+                               'R': self.get_rook_moves,
+                               'Q': self.get_queen_moves,
+                               'K': self.get_king_moves}
+
+
+        print('done!')
+
+    def get_pawn_moves(self):
+        return None
+
+    def get_knight_moves(self):
+        return None
+
+    def get_bishop_moves(self):
+
+        return None
+
+    def get_rook_moves(self, square, moves):
+        enemy_color = 'b' if self.is_white_turn else 'w'
+
+        # TODO continue back here tomorrow :) 
+
+        for d in s.linear_dirs:
+            for i in range(1, 8):
+                end_square = square + d * i  # moving in the direction one step
+                end_piece = self.board[end_square][0]  # the square value where it ends up after attempted move
+                if end_piece in f'{enemy_color}-':  # seeing if enemy piece at final square
+                    # note - come back here
+                    #if not piece_pinned or pin_direction in (d, -d):  #
+                    piece_increase = (s.piece_value_mid_game['R'][end_square] - s.piece_value_mid_game['R'][square]) * self.midgame + \
+                                     (s.piece_value_end_game['R'][end_square] - s.piece_value_end_game['R'][square]) * self.endgame
+                    moves.append((square, end_square, 'no', piece_increase + s.mvv_lva_values[self.board[end_square][1]]))
+
+                    if end_piece == enemy_color:
+                        break  # break out of that direction
+                else:
+                    break
+    def get_queen_moves(self):
+        return None
+
+    def get_king_moves(self):
+        return None
+
+    def init_king_positions(self):
+        """
+        Finds the locations of the kings (assumes only 2!) and updates the king location dictionary for each color
+        """
+        for square in self.board:
+            color, piece = self.get_square_info(square)
+            if piece == 'K':
+                self.king_location[color] = square
+
+    def init_piece_values(self):
+        """
+        Sets the starting values of the two piece value
+        Fixme - wonder if using a dict here is slower? doubt it
+        :return:
+        """
+        for square in self.board:
+            color, piece = self.get_square_info(square)
+            if color in s.valid_colors:
+                # TODO - include the square bonus here (will have to invert black position to use 1 board)
+                self.piece_values[color] += c.piece_value[piece]
+
 
     def initialize_piece_count_dict(self):
         """
@@ -45,14 +130,84 @@ class GameInstance:
 
         return [white_dict, black_dict]
 
-    def get_square_color(self):
-        return None
+    def get_square_info(self, square: int) -> tuple:
+        color = self.get_square_color(square)
+        piece = self.get_square_piece(square)
+        return color, piece
 
-    def get_square_piece(self):
-        return None
+    def get_square_color(self, square: int, none_check=False) -> str:
+        """
+        Gets color of piece based on board dict index
+        :param square: square index
+        :param none_check: flag if a non valid (empty or off board) piece should be returned as None
+        :return: w/b or None if empty square/outside of game board
+        """
+        color = self.board[square][0]
+        return color if color in s.valid_colors else None if none_check else color
+
+    def get_square_piece(self, square: int, none_check=False) -> str:
+        """
+        Gets piece based on board dict index
+        :param square: square index
+        :param none_check: flag if a non valid (empty or off board) piece should be returned as None
+        :return: w/b or None if empty square/outside of game board
+        :return:
+        """
+        piece = self.board[square][1]
+        return piece if piece in s.valid_pieces else None if none_check else piece
+
+    def init_piece_columns(self):
+        """
+        Populates these random empty lists, such that the square column is added to a list for each color/
+        piece of interest
+        :return: None
+        """
+        # FIXME - hate lots of this lol! # note - don't think this is super important for now though
+        for square in self.board:
+            piece_type, color = self.get_square_piece(square), self.get_square_color(square)
+            # FIXME - for now just going to continue iterating over every cell, but in future would like to track
+            #       - the pieces location (wasted loops on non pieces may add up? probably not but will see!)
+            if piece_type in c.column_pieces:
+                # FIXME - surely generalize such that you can track any column?
+                #       - this makes me think that this is very specific evaluation helper data
+                if piece_type == 'R':
+                    if color == 'w':
+                        # Fixme - don't like how the individual colors are referenced here with 0/1 implied
+                        self.rook_columns_list[0].append(square % 10)
+                    elif color == 'b':
+                        self.rook_columns_list[1].append(square % 10)
+                elif piece_type == 'p':
+                    if color == 'w':
+                        self.pawn_columns_list[0].append(square % 10)
+                    elif color == 'b':
+                        self.pawn_columns_list[1].append(square % 10)
 
 
-if __name__ == '__main__':
-    test_fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
-    test_instance = GameInstance(starting_fen=test_fen)
-    print('exiting')
+    def game_constant_A(self):
+        """
+        Constant to be used in evaluating
+        :return: A value
+        """
+        example = min(self.full_move, 50)/50
+        return example
+
+    def game_constant_B(self):
+        """
+        Constant to be used in evaluating
+        :return: B value
+        """
+        return 1
+
+    def update_game_constants(self):
+        """
+        Calls the game constant function and sets the value within game_constant dict
+        """
+        for constant, (value, func) in self.game_constants.items():
+            self.game_constants[constant][0] = func()
+
+
+
+
+test_fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+test_instance = GameInstance(starting_fen=test_fen)
+print('exiting')

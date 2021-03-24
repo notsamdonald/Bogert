@@ -1,8 +1,14 @@
 # Board used for start-up drawing of the board
 # note - this is using Square list method (see https://en.wikipedia.org/wiki/Board_representation_(computer_chess))
+# TODO - rename this from fen to just settings?
+
+linear_dirs = [-10, -1, 10, 1]
+diagonal_dirs = [-11, -9, 9, 11]
+knight_moves = [-21, -19, -12, -8, 8, 12, 19, 21]  # Up-up-left, up-up-right ......
 
 board_square_count = 120  # 12x10
 valid_pieces = 'pNBRQK'
+valid_colors = 'wb'
 
 start_board = {0: 'FF',   1: 'FF',   2: 'FF',   3: 'FF',   4: 'FF',   5: 'FF',   6: 'FF',   7: 'FF',   8: 'FF',   9: 'FF',   # [  0,   1,   2,   3,   4,   5,   6,   7,   8,   9]
               10: 'FF',  11: 'FF',  12: 'FF',  13: 'FF',  14: 'FF',  15: 'FF',  16: 'FF',  17: 'FF',  18: 'FF',  19: 'FF',   # [ 10,  11,  12,  13,  14,  15,  16,  17,  18,  19]
