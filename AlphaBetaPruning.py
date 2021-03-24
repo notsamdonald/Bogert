@@ -2,6 +2,8 @@ import chess
 import math
 import random
 import sys
+import time
+from numba import jit
 
 BOUNDS_DICT = {
     "P": [0, 0, 0, 0, 0, 0, 0, 0,
@@ -59,23 +61,23 @@ BOUNDS_DICT = {
           20, 30, 10, 0, 0, 10, 30, 20]}
 
 
-def minimaxRoot(depth, board, is_maximizing, square_bonus = False):
+def minimaxRoot(depth, board, is_maximizing, square_bonus=False, iterative_deeping=True):
+    tic = time.perf_counter()
 
     possible_moves = random_possible_move(board)
     best_move_score = -9999 if is_maximizing else 9999
     best_move = None
     move_count = 0
 
-    move_score_array = []
-    for move in possible_moves:
-        move_score_array.append([move,(evaluation(board, square_bonus=False))])
+    if iterative_deeping:
+        move_score_array = []
+        for move in possible_moves:
+            move_score_array.append([move, (evaluation(board, square_bonus=False))])
+        move_score_array = sorted(move_score_array, key=lambda x: x[1])
+        if is_maximizing:
+            move_score_array.reverse()
 
-
-    move_score_array = sorted(move_score_array, key=lambda x: x[1])
-    if is_maximizing:
-        move_score_array.reverse()
-
-    possible_moves = [item[0] for item in move_score_array]
+        possible_moves = [item[0] for item in move_score_array]
 
     for x in possible_moves:
         move = chess.Move.from_uci(str(x))
@@ -83,11 +85,18 @@ def minimaxRoot(depth, board, is_maximizing, square_bonus = False):
 
         board.push(move)
         proposed_move_score, sub_tree_moves = minimax(depth=depth - 1,
-                                       board=board,
-                                       alpha=-10000,
-                                       beta=10000,
-                                       is_maximizing = not is_maximizing,
-                                                      square_bonus = square_bonus)
+                                                      board=board,
+                                                      alpha=-10000,
+                                                      beta=10000,
+                                                      is_maximizing=not is_maximizing,
+                                                      square_bonus=square_bonus)
+        """
+        proposed_move_score = negamax(depth=depth - 1,
+                                      board=board,
+                                      alpha=-10000,
+                                      beta=10000,
+                                      color=not is_maximizing)
+        """
         move_count += sub_tree_moves
 
         if is_maximizing:
@@ -95,49 +104,53 @@ def minimaxRoot(depth, board, is_maximizing, square_bonus = False):
             if value > best_move_score:
                 best_move_score = value
                 best_move = move
-               # print("Best score: ", str(best_move_score))
-                #print("Best move: ", str(best_move_final))
+            # print("Best score: ", str(best_move_score))
+            # print("Best move: ", str(best_move_final))
         else:
             value = min(best_move_score, proposed_move_score)
             if value < best_move_score:
                 best_move_score = value
                 best_move = move
-                #print("Best score: " ,str(best_move_score))
-                #print("Best move: ",str(best_move_final))
+                # print("Best score: " ,str(best_move_score))
+                # print("Best move: ",str(best_move_final))
 
         board.pop()  # Take away the proposed move
+    toc = time.perf_counter()
 
     print("Best score: ", str(best_move_score))
     print("Best move: ", str(best_move))
     print("Moves evaluated: ", str(move_count))
+    print("Evals/sec: {0:.1f}".format(move_count / (toc - tic)))
+    print("Time: {0:.1f}s".format((toc - tic)))
 
     return best_move
 
 
 def random_possible_move(board, random_suffle=False, ):
-
     possible_moves = list(board.legal_moves)
     if random_suffle:
         random.shuffle(possible_moves)
     return possible_moves
 
 
-def minimax(depth, board, alpha, beta, is_maximizing, square_bonus, iterative_deeping=False):
+#@profile
+def minimax(depth, board, alpha, beta, is_maximizing, square_bonus, iterative_deeping=True):
     # Reaching the maximum depth specified
     if depth == 0:
         # TODO - confused why the 'base' evaluation within the branch is always negated - assumed its wrt is_maximizing
-        return evaluation(board, square_bonus) , 0 # currently a simple summation of piece values
+        return evaluation(board, square_bonus), 0  # currently a simple summation of piece values
+        # Fixme (59.3% of time spent here) ^
 
     possible_moves = random_possible_move(board)
 
     # Iterative deepening (TODO - confirm this is actually making improvements, should be ~10%)
-    # FIXME - nope, slows it way way down in terms of evals/sec (probably increases pruning count though?
+    # FIXME - nope, slows it way way down in terms of evals/sec (probably increases pruning count though?)
     #  -> the implementation is slow?
 
-    if iterative_deeping:
+    if iterative_deeping and depth > 1:
         move_score_array = []
         for move in possible_moves:
-            move_score_array.append([move,(evaluation(board, square_bonus=False))])
+            move_score_array.append([move, (evaluation(board, square_bonus=False))])  # Fixme (21.5% of time spent here)
         move_score_array = sorted(move_score_array, key=lambda x: x[1])
         if is_maximizing:
             move_score_array.reverse()
@@ -165,7 +178,6 @@ def minimax(depth, board, alpha, beta, is_maximizing, square_bonus, iterative_de
 
         else:
             if proposed_move_score < best_move_score:
-
                 best_move_score = min(best_move_score, proposed_move_score)
                 beta = min(beta, best_move_score)  # Update beta if best_move is better (lower) then prior beta
                 best_move = move
@@ -174,40 +186,48 @@ def minimax(depth, board, alpha, beta, is_maximizing, square_bonus, iterative_de
 
         # TODO - confused about this end condition for the branch
         if beta <= alpha:  #
-            #print('pruned!')
+            # print('pruned!')
             return best_move_score, move_count
 
     return best_move_score, move_count
 
 
-def evaluation(board, square_bonus):
+def negamax(depth, board, alpha, beta, color):
+    if depth == 0:
+        return evaluation(board)
+    leg_moves = board.legal_moves
+    for i_move in leg_moves:
+        move = chess.Move.from_uci(str(i_move))
+        board.push(move)
+        value = -negamax(depth - 1, board, -beta, -alpha, -color)
+        board.pop()
+        alpha = max(alpha, value)
+        if beta <= alpha:
+            return value
+    return value
 
+
+#@profile
+def evaluation(board, square_bonus=True):
     board_total = 0
+    piece_map = board.piece_map2()
+    for square_id, piece in piece_map.items():
+        # for i in range(64):
+        # piece = board.piece_at(i)
+        # if piece is not None:
 
-    for i in range(64):
+        # Unpacking
+        piece_str = piece.symbol()
+        # piece_str = chess.piece_symbol(board.piece_at(square_id).piece_type)
+        color = piece.color
 
-        try:
-            color = board.piece_at(i).color
-        except AttributeError as e:
-            color = None
-
-        if color is not None:
-            if board.piece_at(i).color:  # White
-                board_total += getPieceValue(str(board.piece_at(i)))
-                if square_bonus:
-                    board_total += getPieceSqauareBonus(str(board.piece_at(i)), i, True)
-
-            else:  # Black
-                board_total -= (getPieceValue(str(board.piece_at(i))) + getPieceSqauareBonus(str(board.piece_at(i)), i, False))
-                if square_bonus:
-                    board_total -= getPieceSqauareBonus(str(board.piece_at(i)), i, False)
-
+        sign = 1 if color else -1
+        board_total += sign * (getPieceValue(piece_str) + getPieceSqauareBonus(piece_str, square_id, color))
 
     return board_total
 
 
 def getPieceValue(piece):
-
     if piece is None:
         return 0
 
@@ -224,11 +244,10 @@ def getPieceValue(piece):
 
 
 def getPieceSqauareBonus(piece, position, is_maximizing):
-
     if not is_maximizing:
         position = 63 - position
-    pos = 64 - (position//8 + 1) * 8 + position-(position//8)*8  # TODO - fix this, think it is wrong!
-    #print(piece, position,pos, bonus_dict[piece.upper()][pos])
+    pos = 64 - (position // 8 + 1) * 8 + position - (position // 8) * 8  # TODO - fix this, think it is wrong!
+    # print(piece, position,pos, bonus_dict[piece.upper()][pos])
     return BOUNDS_DICT[piece.upper()][pos]
 
 
@@ -237,7 +256,7 @@ def main():
     n = 0
     print(board)
     while n < 100:
-        if n%2 == 0:
+        if n % 2 == 0:
             move = input("Enter move: ")
             move = chess.Move.from_uci(str(move))
             print(move)
@@ -250,7 +269,6 @@ def main():
             print(move)
         print(board)
         n += 1
-
 
 
 if __name__ == "__main__":

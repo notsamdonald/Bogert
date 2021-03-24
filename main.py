@@ -347,9 +347,11 @@ def AI_2(board, white_move=False):
     return move
 
 
+#@profile
 def AI_3(board):
     'mo'
-    move = minimaxRoot(3, board, board.turn, square_bonus=True)
+
+    move = minimaxRoot(4, board, board.turn, square_bonus=True)
 
     return move
 
