@@ -38,43 +38,151 @@ class GameInstance:
                                'K': self.get_king_moves}
 
 
+        self.turn = self.update_turn()
+
+        self.get_all_possible_moves()
         print('done!')
 
-    def get_pawn_moves(self):
-        return None
 
-    def get_knight_moves(self):
-        return None
+    def update_turn(self):
+        return 'w' if self.is_whites_turn else 'b'
 
-    def get_bishop_moves(self):
+    def get_all_possible_moves(self):
+        """
+        Get pseudo legal moves (without considering checks)
+        :return:
+        """
+        moves = []
+        for square in s.real_board_squares:
+            color, piece = self.get_square_info(square)
+            if piece in s.valid_pieces and self.turn == color:
+                # checking if piece owned by the turn taker is present on the square
+                self.move_functions[piece](square, moves)
+        print(moves)
 
-        return None
 
-    def get_rook_moves(self, square, moves):
-        enemy_color = 'b' if self.is_white_turn else 'w'
 
-        # TODO continue back here tomorrow :) 
+    def get_pawn_moves(self, square, moves):
+        pass
 
-        for d in s.linear_dirs:
+    def get_knight_moves(self, square, moves):
+        enemy_color = 'b' if self.is_whites_turn else 'w'
+
+        # TODO continue back here tomorrow :)
+        # note - currently not doing any pin checks! pseudo legal move generator.
+        for direction in s.knight_moves:
+            end_square = square + direction   # moving in the direction one step
+            color_s, piece_s = self.get_square_info(square)  # start square conents
+            color_e, piece_e = self.get_square_info(end_square)  # end square contents
+
+            if color_e in [enemy_color, '-']:  # seeing if enemy piece at final square or empty (valid sqare check)
+                # TODO - implement pin check logic
+                #if not piece_pinned or pin_direction in (d, -d):  #
+
+                # note - calculating the increase in piece value based on move and game phase
+                # TODO - increase this such that there are multiple tables extrapolated between based on phase
+                piece_increase = (s.piece_value_mid_game[piece_s][end_square] - s.piece_value_mid_game[piece_s][square])
+
+                # note - start/end sqaure - no (TODO  what this this)
+                # note -  delta of evaluation (based on the above tables + the taken piece (end square value)
+                moves.append((square, end_square, 'no', piece_increase + s.mvv_lva_values[piece_e]))
+
+                # note - these are not needed for knight as not a sliding piece
+                # note - if the end_square houses a enemy piece - stop checking in that direction.
+                #if color_e == enemy_color:
+                #    break  # break out of that direction
+            #else:
+            #    break
+
+    def get_bishop_moves(self, square, moves):
+        enemy_color = 'b' if self.is_whites_turn else 'w'
+
+        # TODO continue back here tomorrow :)
+        # note - currently not doing any pin checks! pseudo legal move generator.
+        for direction in s.diagonal_dirs:
             for i in range(1, 8):
-                end_square = square + d * i  # moving in the direction one step
-                end_piece = self.board[end_square][0]  # the square value where it ends up after attempted move
-                if end_piece in f'{enemy_color}-':  # seeing if enemy piece at final square
-                    # note - come back here
-                    #if not piece_pinned or pin_direction in (d, -d):  #
-                    piece_increase = (s.piece_value_mid_game['R'][end_square] - s.piece_value_mid_game['R'][square]) * self.midgame + \
-                                     (s.piece_value_end_game['R'][end_square] - s.piece_value_end_game['R'][square]) * self.endgame
-                    moves.append((square, end_square, 'no', piece_increase + s.mvv_lva_values[self.board[end_square][1]]))
+                end_square = square + direction * i  # moving in the direction one step
+                color_s, piece_s = self.get_square_info(square)  # start square conents
+                color_e, piece_e = self.get_square_info(end_square)  # end square contents
 
-                    if end_piece == enemy_color:
+                if color_e in [enemy_color, '-']:  # seeing if enemy piece at final square or empty (valid sqare check)
+                    # TODO - implement pin check logic
+                    #if not piece_pinned or pin_direction in (d, -d):  #
+
+                    # note - calculating the increase in piece value based on move and game phase
+                    # TODO - increase this such that there are multiple tables extrapolated between based on phase
+                    piece_increase = (s.piece_value_mid_game['R'][end_square] - s.piece_value_mid_game['R'][square])
+
+                    # note - start/end sqaure - no (TODO  what this this)
+                    # note -  delta of evaluation (based on the above tables + the taken piece (end square value)
+                    moves.append((square, end_square, 'no', piece_increase + s.mvv_lva_values[piece_e]))
+
+                    # note - if the end_square houses a enemy piece - stop checking in that direction.
+                    if color_e == enemy_color:
                         break  # break out of that direction
                 else:
                     break
-    def get_queen_moves(self):
-        return None
 
-    def get_king_moves(self):
-        return None
+    def get_rook_moves(self, square, moves):
+        enemy_color = 'b' if self.is_whites_turn else 'w'
+
+        # TODO continue back here tomorrow :)
+        # note - currently not doing any pin checks! pseudo legal move generator.
+        for direction in s.linear_dirs:
+            for i in range(1, 8):
+                end_square = square + direction * i  # moving in the direction one step
+                color_s, piece_s = self.get_square_info(square)  # start square conents
+                color_e, piece_e = self.get_square_info(end_square)  # end square contents
+
+                if color_e in [enemy_color, '-']:  # seeing if enemy piece at final square or empty (valid sqare check)
+                    # TODO - implement pin check logic
+                    #if not piece_pinned or pin_direction in (d, -d):  #
+
+                    # note - calculating the increase in piece value based on move and game phase
+                    # TODO - increase this such that there are multiple tables extrapolated between based on phase
+                    piece_increase = (s.piece_value_mid_game[piece_s][end_square] - s.piece_value_mid_game[piece_s][square])
+
+                    # note - start/end sqaure - no (TODO  what this this)
+                    # note -  delta of evaluation (based on the above tables + the taken piece (end square value)
+                    moves.append((square, end_square, 'no', piece_increase + s.mvv_lva_values[piece_e]))
+
+                    # note - if the end_square houses a enemy piece - stop checking in that direction.
+                    if color_e == enemy_color:
+                        break  # break out of that direction
+                else:
+                    break
+
+    def get_queen_moves(self, square, moves):
+        enemy_color = 'b' if self.is_whites_turn else 'w'
+
+        # TODO continue back here tomorrow :)
+        # note - currently not doing any pin checks! pseudo legal move generator.
+        for direction in s.diagonal_dirs + s.linear_dirs:
+            for i in range(1, 8):
+                end_square = square + direction * i  # moving in the direction one step
+                color_s, piece_s = self.get_square_info(square)  # start square conents
+                color_e, piece_e = self.get_square_info(end_square)  # end square contents
+
+                if color_e in [enemy_color, '-']:  # seeing if enemy piece at final square or empty (valid sqare check)
+                    # TODO - implement pin check logic
+                    #if not piece_pinned or pin_direction in (d, -d):  #
+
+                    # note - calculating the increase in piece value based on move and game phase
+                    # TODO - increase this such that there are multiple tables extrapolated between based on phase
+                    piece_increase = (s.piece_value_mid_game[piece_s][end_square] - s.piece_value_mid_game[piece_s][square])
+
+                    # note - start/end sqaure - no (TODO  what this this)
+                    # note -  delta of evaluation (based on the above tables + the taken piece (end square value)
+                    moves.append((square, end_square, 'no', piece_increase + s.mvv_lva_values[piece_e]))
+
+                    # note - if the end_square houses a enemy piece - stop checking in that direction.
+                    if color_e == enemy_color:
+                        break  # break out of that direction
+                else:
+                    break
+
+    def get_king_moves(self, square, moves):
+        pass
 
     def init_king_positions(self):
         """
@@ -208,6 +316,9 @@ class GameInstance:
 
 
 
-test_fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+#test_fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+test_fen = 'r3k2r/8/8/8/8/8/8/R3K2R w - - 0 1'  # kings and rooks
+test_fen = '4k2r/8/8/8/8/8/r7/R1K5 w - - 0 1'
+test_fen = '8/8/8/2p5/8/pN6/8/Q1Rp4 w - - 0 1'
 test_instance = GameInstance(starting_fen=test_fen)
 print('exiting')
