@@ -1,6 +1,8 @@
 import fen_logic as fl
 import fen_settings as s
 import config as c
+import random
+
 
 class GameInstance:
     def __init__(self, starting_fen):
@@ -43,6 +45,27 @@ class GameInstance:
         self.get_all_possible_moves()
         print('done!')
 
+    def get_legal_moves(self):
+        self.get_all_possible_moves()
+        return self.possible_moves
+
+
+    def make_move(self, move):
+
+        # unpacking FIXME - don't like how unclear this is
+        [start_square, end_square, move_type, delta_eval] = move
+
+        piece_moved = self.board[start_square]
+        piece_captured = self.board[end_square]
+
+        self.board[end_square] = piece_moved
+        self.board[start_square] = '--'
+
+        self.turn_over()
+
+    def turn_over(self):
+        self.is_whites_turn = not self.is_whites_turn
+        self.turn = self.update_turn()
 
     def update_turn(self):
         return 'w' if self.is_whites_turn else 'b'
@@ -58,8 +81,7 @@ class GameInstance:
             if piece in s.valid_pieces and self.turn == color:
                 # checking if piece owned by the turn taker is present on the square
                 self.move_functions[piece](square, moves)
-        print(moves)
-
+        self.possible_moves = moves
 
 
     def get_pawn_moves(self, square, moves):
@@ -290,7 +312,6 @@ class GameInstance:
                     elif color == 'b':
                         self.pawn_columns_list[1].append(square % 10)
 
-
     def game_constant_A(self):
         """
         Constant to be used in evaluating
@@ -317,8 +338,18 @@ class GameInstance:
 
 
 #test_fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
-test_fen = 'r3k2r/8/8/8/8/8/8/R3K2R w - - 0 1'  # kings and rooks
-test_fen = '4k2r/8/8/8/8/8/r7/R1K5 w - - 0 1'
+#test_fen = 'r3k2r/8/8/8/8/8/8/R3K2R w - - 0 1'  # kings and rooks
+#test_fen = '4k2r/8/8/8/8/8/r7/R1K5 w - - 0 1'
+
+"""
 test_fen = '8/8/8/2p5/8/pN6/8/Q1Rp4 w - - 0 1'
 test_instance = GameInstance(starting_fen=test_fen)
-print('exiting')
+
+
+# Randomly making moves to test
+while 1:
+    test_instance.get_all_possible_moves()
+    move = random.choice(test_instance.possible_moves)
+    test_instance.make_move(move)
+#print('exiting')
+"""

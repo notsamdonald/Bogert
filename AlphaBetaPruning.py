@@ -64,7 +64,10 @@ BOUNDS_DICT = {
 def minimaxRoot(depth, board, is_maximizing, square_bonus=False, iterative_deeping=True):
     tic = time.perf_counter()
 
-    possible_moves = random_possible_move(board)
+    #possible_moves = random_possible_move(board)
+    board.get_all_possible_moves()
+    possible_moves = board.possible_moves
+
     best_move_score = -9999 if is_maximizing else 9999
     best_move = None
     move_count = 0

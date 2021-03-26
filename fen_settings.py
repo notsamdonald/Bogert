@@ -43,6 +43,9 @@ algebraic_to_square_id = {'a8': 21, 'b8': 22, 'c8': 23, 'd8': 24, 'e8': 25, 'f8'
                           'a2': 81, 'b2': 82, 'c2': 83, 'd2': 84, 'e2': 85, 'f2': 86, 'g2': 87, 'h2': 88,
                           'a1': 91, 'b1': 92, 'c1': 93, 'd1': 94, 'e1': 95, 'f1': 96, 'g1': 97, 'h1': 98}
 
+
+square_id_to_algebraic = {v: k for k, v in algebraic_to_square_id.items()}
+
 # FEN representation to board pieces
 fen_to_piece = {'p': 'bp',
                 'n': 'bN',

@@ -3,7 +3,10 @@ from tkinter import *
 import random
 from PIL import Image, ImageTk
 from AlphaBetaPruning import *
+from GameInstance import GameInstance
 import cProfile
+import fen_settings as s
+
 
 import chess
 import chess.engine
@@ -46,6 +49,11 @@ def drawPieces():
     #	dspboard = list(boardHistory[boardHistoryPos])
     #	if flipped: dspboard = reversed(dspboard)
     for i in range(0, 64):
+
+        #real_square_id = s.real_board_squares[::-1][i]
+
+        correct_index = 8*(i//8) + 7-(i%8)  # Fixme - janky mapping between different board representations
+        real_square_id = s.real_board_squares[::-1][correct_index]
         c = 63 - i
         # xTile goes from 0 to 7 (files)
         # yTile goes from 0 to 7 (ranks)
@@ -60,23 +68,25 @@ def drawPieces():
             yDrawPos = ((7 - yTile) * squareSize) - 3
 
         mytext = str(i)
-        piece = str(board.piece_at(i))
+        #piece = str(board.piece_at(i))
+        color, piece = board.get_square_info(real_square_id)
+
 
         pieceFile = ''
-
-        if piece == 'R': pieceFile = 'pieces\WR.png'  # white rook
-        if (piece == 'N'): pieceFile = 'pieces\WN.png'  # white knight
-        if (piece == 'B'): pieceFile = 'pieces\WB.png'  # white bishop
-        if (piece == 'Q'): pieceFile = 'pieces\WQ.png'  # white queen
-        if (piece == 'K'): pieceFile = 'pieces\WK.png'  # white king
-        if (piece == 'P'): pieceFile = 'pieces\WP.png'  # white pawn
-
-        if (piece == 'r'): pieceFile = 'pieces\BR.png'  # black rook
-        if (piece == 'n'): pieceFile = 'pieces\BN.png'  # black knight
-        if (piece == 'b'): pieceFile = 'pieces\BB.png'  # black bishop
-        if (piece == 'q'): pieceFile = 'pieces\BQ.png'  # black queen
-        if (piece == 'k'): pieceFile = 'pieces\BK.png'  # black king
-        if (piece == 'p'): pieceFile = 'pieces\BP.png'  # black pawn
+        if color == 'w':
+            if piece == 'R': pieceFile = 'pieces\WR.png'  # white rook
+            if (piece == 'N'): pieceFile = 'pieces\WN.png'  # white knight
+            if (piece == 'B'): pieceFile = 'pieces\WB.png'  # white bishop
+            if (piece == 'Q'): pieceFile = 'pieces\WQ.png'  # white queen
+            if (piece == 'K'): pieceFile = 'pieces\WK.png'  # white king
+            if (piece == 'p'): pieceFile = 'pieces\WP.png'  # white pawn
+        elif color == 'b':
+            if (piece == 'R'): pieceFile = 'pieces\BR.png'  # black rook
+            if (piece == 'N'): pieceFile = 'pieces\BN.png'  # black knight
+            if (piece == 'B'): pieceFile = 'pieces\BB.png'  # black bishop
+            if (piece == 'Q'): pieceFile = 'pieces\BQ.png'  # black queen
+            if (piece == 'K'): pieceFile = 'pieces\BK.png'  # black king
+            if (piece == 'p'): pieceFile = 'pieces\BP.png'  # black pawn
 
         if (pieceFile != ''):
             img = Image.open(pieceFile)
@@ -130,7 +140,7 @@ def drawBoard():
     count = 0
     board = ''
     # img = Image.Open(file='board.PNG')
-    img = Image.open("board.PNG")
+    img = Image.open("board_2.PNG")
     img = img.resize((canvasSize, canvasSize), Image.ANTIALIAS)
     boardImg = ImageTk.PhotoImage(img)
     # boardImg.config(file='board.PNG')
@@ -207,7 +217,11 @@ def canvasClick(event):
         boardIndexX = 7 - (boardIndex % 8)
         boardIndexY = int(boardIndex / 8)
         boardIndex = boardIndexY * 8 + boardIndexX
-        piece = board.piece_at(boardIndex)
+        #piece = board.piece_at(boardIndex)
+
+        correct_index = 8*(boardIndex//8) + 7-(boardIndex%8)  # Fixme - janky mapping between different board representations
+        real_square_id = s.real_board_squares[::-1][correct_index]
+        piece = board.get_square_piece(real_square_id)
 
         if (piece == None): return
         if ((board.turn and islower(str(piece))) or (not board.turn and isupper(str(piece)))): return
@@ -256,7 +270,7 @@ def canvasMotion(event):
     clickEndSquare = boardIndex
     move = chess.Move(from_square=clickStartSquare, to_square=boardIndex)
     islegal = False
-    for legalmove in board.legal_moves:
+    for legalmove in board.get_legal_moves():
         if str(move) == str(legalmove): islegal = True
     if islegal:
         # draw green square over moused over square
@@ -300,11 +314,16 @@ def canvasRelease(event):
 
     move = chess.Move(from_square=startSquare, to_square=endSquare)
     islegal = False
-    for legalmove in board.legal_moves:
-        if str(move) == str(legalmove): islegal = True
+    for legalmove in board.get_legal_moves():
+        decoded_move = s.square_id_to_algebraic[legalmove[0]]+s.square_id_to_algebraic[legalmove[1]]
+        #print(decoded_move)
+        if str(move) == str(decoded_move):
+            islegal = True
+            break
     if islegal:
-        board.push(move)
-        if (board.turn):
+        board.make_move(legalmove)
+        #board.turn_over()
+        if (board.turn == 'w'):
             gameStateVar.set("White to move.")
         else:
             gameStateVar.set("Black to move.")
@@ -312,7 +331,7 @@ def canvasRelease(event):
     drawBoard()
     drawPieces()
     root.update()
-    legalmoves = board.legal_moves
+    legalmoves = board.get_legal_moves()
     count = 0
     for x in legalmoves:
         count += 1
@@ -320,6 +339,8 @@ def canvasRelease(event):
         gameStateVar.set("End of game.")
         root.update()
         return
+
+
     if (board.turn and p1 != "Human"):
         getAIMove(turn='White')
     elif (not board.turn and p2 != "Human"):
@@ -356,9 +377,16 @@ def AI_3(board):
     return move
 
 
-def AI_4():
+def AI_4(board):
     'me'
-    return None
+    # WIP to test new framework
+    board.get_all_possible_moves()
+    move = random.choice(board.possible_moves)
+    print("{} moves found".format(len(board.possible_moves)))
+    return move
+
+    #board.make_move(move)
+    #print('test')
 
 
 def AI_5():
@@ -404,22 +432,26 @@ def getAIMove(turn):
                     lastpvmovestr = pvmovestr
     # pvmove = analysis.info['pv'][0]
 
-    if turn == 'White':
-        move = AI_3(board)
+    if turn == 'white':
+        move = AI_4(board)
     else:
-        move = AI_3(board)
+        move = AI_4(board)
 
     if move == 'No' or move is None:
         gameStateVar.set("End of game.")
         root.update()
         gameinprogress = False
     else:
-        print(move)
-        board.push_uci(str(move))
+        #print(move)
+        #board.push_uci(str(move))
+        board.make_move(move)
         drawBoard()
         drawPieces()
 
-    legalmoves = board.legal_moves
+    #legalmoves = board.legal_moves
+    board.get_all_possible_moves()
+    legalmoves = board.possible_moves
+
     count = 0
 
     for x in legalmoves:
@@ -449,10 +481,12 @@ def redrawTile(x, y):
     global flipped
     global canvasSize
     count = 0
-    colLight = (128, 128, 128)
-    colDark = (196, 196, 196)
-    colLight = '#%02x%02x%02x' % colLight
-    colDark = '#%02x%02x%02x' % colDark
+    #colLight = (240,218,181)
+    #colDark = (181,135,99)
+    #colLight = '#%02x%02x%02x' % colLight
+    colDark = '#b58763'
+    colLight = '#f0dab5'
+    #colDark = '#%02x%02x%02x' % colDark
 
     squareSize = canvasSize / 8
     # redraws a tile with its piece
@@ -483,7 +517,12 @@ def redrawTile(x, y):
     boardCanvas.create_rectangle(xpos + 3 * tempDrawDir, ypos + 3 * tempDrawDir, (xpos + squareSize + 3 * tempDrawDir),
                                  (ypos + squareSize + 3 * tempDrawDir), fill=col, outline=col)
     # redraw piece
-    piece = str(board.piece_at(boardIndex))
+    #piece = str(board.piece_at(boardIndex))
+    correct_index = 8 * (boardIndex // 8) + 7 - (boardIndex % 8)  # Fixme - janky mapping between different board representations
+    real_square_id = s.real_board_squares[::-1][correct_index]
+    #real_square_id = s.real_board_squares[::-1][boardIndex]
+    piece = board.get_square_piece(real_square_id)
+
     pieceFile = ''
     if (piece == 'R'): pieceFile = 'pieces\WR.png'  # white rook
     if (piece == 'N'): pieceFile = 'pieces\WN.png'  # white knight
@@ -565,12 +604,14 @@ def main():
     p1 = "AI"
     p2 = "AI"
 
+    """
     if (p1 == "AI"):
         # engine1 = chess.engine.SimpleEngine.popen_uci("c:\\engines\\stockfish.exe")
         pass
     if (p2 == "AI"):
         # engine2 = chess.engine.SimpleEngine.popen_uci("c:\\c\\chess\\raven0.80.exe")
         pass
+    """
 
     initGame(p1, p2)
     # root.update()
@@ -598,11 +639,16 @@ def initGame(player1, player2):
     global gameStateVar
 
     board = chess.Board()
+    test_fen = 'bn6/1q6/2r5/8/8/5R2/5NQ1/7B w - - 0 1'
+    test_fen = 'nnnnnnnn/bbbbbbbb/nnnnnnnn/bbbbbbbb/BBBBBBBB/NNNNNNNN/BBBBBBBB/NNNNNNNN w - - 0 1'  # lol
+    board = GameInstance(starting_fen=test_fen)
     gameinprogress = True
     gameStateVar.set("White to move.")
-    if (p1 == "AI" and board.turn):
+
+    if (p1 == "AI" and board.is_whites_turn):
         getAIMove(turn='white')
-    elif (p2 == "AI" and not board.turn):
+
+    elif (p2 == "AI" and not board.is_whites_turn):
         getAIMove(turn='black')
 
 
