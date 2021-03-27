@@ -39,7 +39,6 @@ class GameInstance:
                                'Q': self.get_queen_moves,
                                'K': self.get_king_moves}
 
-
         self.turn = self.update_turn()
 
         self.get_all_possible_moves()
@@ -58,8 +57,35 @@ class GameInstance:
         piece_moved = self.board[start_square]
         piece_captured = self.board[end_square]
 
-        self.board[end_square] = piece_moved
-        self.board[start_square] = '--'
+        piece_color, piece_type = self.get_square_info(start_square)  # start square contents
+
+
+        if move_type != 'no':
+            if move_type == 'two_square_pawn':
+                self.board[end_square] = piece_moved
+                self.board[start_square] = '--'
+                self.en_passant_square = int(start_square + (end_square - start_square) / 2)
+
+            if move_type == 'enpassant':
+                # FIXME - small graphical bug - but no biggie
+
+                taken_piece_square = end_square + 10 if start_square - end_square > 0 else end_square - 10
+                self.board[taken_piece_square] = '--'
+                #self.board[self.en_passant_square] = '--'
+                self.en_passant_square = None  # Fixme - dont want to do this every move
+                self.board[end_square] = piece_moved
+                self.board[start_square] = '--'
+
+            if move_type == 'Qpromotion':
+                #self.board[self.en_passant_square] = '--'
+                self.board[end_square] = "{}Q".format(piece_color)
+                self.board[start_square] = '--'
+                self.en_passant_square = None  # Fixme - dont want to do this every move
+
+        else:
+            self.board[end_square] = piece_moved
+            self.board[start_square] = '--'
+            self.en_passant_square = None
 
         self.turn_over()
 
@@ -83,9 +109,58 @@ class GameInstance:
                 self.move_functions[piece](square, moves)
         self.possible_moves = moves
 
-
     def get_pawn_moves(self, square, moves):
-        pass
+
+        enemy_color = 'b' if self.is_whites_turn else 'w'
+        color = 'w' if self.is_whites_turn else 'b'
+
+        pawn_start_cords = s.white_pawn_start if self.is_whites_turn else s.black_pawn_start
+        enemy_pawn_start_cords = s.black_pawn_start if self.is_whites_turn else s.white_pawn_start
+
+        pawn_direction = -1 if self.is_whites_turn else 1
+        pawn_en_passant_cords = [cord + 10 * pawn_direction for cord in pawn_start_cords]
+        pawn_end_cords = [cord + 10 * pawn_direction for cord in enemy_pawn_start_cords]
+
+        color_s, piece_s = self.get_square_info(square)  # start square contents
+
+        # Moving forward
+        available_steps = [1, 2] if square in pawn_start_cords else [1]
+        for step_size in available_steps:
+            square_f = square + s.up * step_size * pawn_direction
+            color_f, piece_f = self.get_square_info(square_f)  # end square contents
+            if piece_f == '-':   # empty
+                if square_f in pawn_end_cords:
+                    piece_e = "Q"
+                    piece_increase = (s.piece_value_mid_game[piece_e][square_f] - s.piece_value_mid_game[piece_s][square])
+                    moves.append((square, square_f, 'Qpromotion', piece_increase))
+                else:
+                    piece_increase = (s.piece_value_mid_game[piece_s][square_f] - s.piece_value_mid_game[piece_s][square])
+                    move_type = 'two_square_pawn' if step_size == 2 else 'no'
+                    moves.append((square, square_f, move_type, piece_increase))
+
+        # Taking on diagonal + enpassantg
+        available_steps = s.diagonals
+        for step in available_steps:
+            square_f = square + step * pawn_direction
+            print(square_f)
+            color_f, piece_f = self.get_square_info(square_f)  # end square contents
+            if color_f == enemy_color:
+                if square_f in pawn_end_cords:
+                    # Promotion
+                    piece_e = "Q"
+                    piece_increase = (s.piece_value_mid_game[piece_e][square_f] - s.piece_value_mid_game[piece_s][square])
+                    moves.append((square, square_f, 'Qpromotion', piece_increase + s.mvv_lva_values[piece_f]))
+
+                else:
+                    piece_increase = (s.piece_value_mid_game[piece_s][square_f] - s.piece_value_mid_game[piece_s][square])
+                    moves.append((square, square_f, 'no', piece_increase + s.mvv_lva_values[piece_f]))
+
+            elif square_f == self.en_passant_square and square_f not in pawn_en_passant_cords:
+                print('enpassant we we!')
+                piece_increase = (s.piece_value_mid_game[piece_s][square_f] - s.piece_value_mid_game[piece_s][square])
+                moves.append((square, square_f, 'enpassant', piece_increase + s.mvv_lva_values[piece_f]))
+            #print(square_f, self.en_passant_square)
+
 
     def get_knight_moves(self, square, moves):
         enemy_color = 'b' if self.is_whites_turn else 'w'
@@ -177,12 +252,14 @@ class GameInstance:
     def get_queen_moves(self, square, moves):
         enemy_color = 'b' if self.is_whites_turn else 'w'
 
+
         # TODO continue back here tomorrow :)
         # note - currently not doing any pin checks! pseudo legal move generator.
-        for direction in s.diagonal_dirs + s.linear_dirs:
+        color_s, piece_s = self.get_square_info(square)  # start square contents
+
+        for direction in s.diagonal_dirs + s.linear_dirs: # FIXME - this shouldn't be in the loop for rook, bishop, queen
             for i in range(1, 8):
                 end_square = square + direction * i  # moving in the direction one step
-                color_s, piece_s = self.get_square_info(square)  # start square conents
                 color_e, piece_e = self.get_square_info(end_square)  # end square contents
 
                 if color_e in [enemy_color, '-']:  # seeing if enemy piece at final square or empty (valid sqare check)
@@ -204,8 +281,35 @@ class GameInstance:
                     break
 
     def get_king_moves(self, square, moves):
-        pass
+        enemy_color = 'b' if self.is_whites_turn else 'w'
 
+        # TODO continue back here tomorrow :)
+        # note - currently not doing any pin checks! pseudo legal move generator.
+        color_s, piece_s = self.get_square_info(square)  # start square contents
+
+        for direction in s.diagonal_dirs + s.linear_dirs:  # FIXME - this shouldn't be in the loop for rook, bishop, queen
+            for i in range(1, 2):
+                end_square = square + direction * i  # moving in the direction one step
+                color_e, piece_e = self.get_square_info(end_square)  # end square contents
+
+                if color_e in [enemy_color, '-']:  # seeing if enemy piece at final square or empty (valid sqare check)
+                    # TODO - implement pin check logic
+                    # if not piece_pinned or pin_direction in (d, -d):  #
+
+                    # note - calculating the increase in piece value based on move and game phase
+                    # TODO - increase this such that there are multiple tables extrapolated between based on phase
+                    piece_increase = (
+                                s.piece_value_mid_game[piece_s][end_square] - s.piece_value_mid_game[piece_s][square])
+
+                    # note - start/end sqaure - no (TODO  what this this)
+                    # note -  delta of evaluation (based on the above tables + the taken piece (end square value)
+                    moves.append((square, end_square, 'no', piece_increase + s.mvv_lva_values[piece_e]))
+
+                    # note - if the end_square houses a enemy piece - stop checking in that direction.
+                    if color_e == enemy_color:
+                        break  # break out of that direction
+                else:
+                    break
     def init_king_positions(self):
         """
         Finds the locations of the kings (assumes only 2!) and updates the king location dictionary for each color
@@ -342,11 +446,12 @@ class GameInstance:
 #test_fen = '4k2r/8/8/8/8/8/r7/R1K5 w - - 0 1'
 
 """
-test_fen = '8/8/8/2p5/8/pN6/8/Q1Rp4 w - - 0 1'
+test_fen = 'rnbq1bnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQ1BNR w - - 0 1'
 test_instance = GameInstance(starting_fen=test_fen)
-
+"""
 
 # Randomly making moves to test
+"""
 while 1:
     test_instance.get_all_possible_moves()
     move = random.choice(test_instance.possible_moves)

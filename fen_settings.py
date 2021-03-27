@@ -6,6 +6,8 @@ linear_dirs = [-10, -1, 10, 1]
 diagonal_dirs = [-11, -9, 9, 11]
 knight_moves = [-21, -19, -12, -8, 8, 12, 19, 21]  # Up-up-left, up-up-right ......
 
+diagonals = [9, 11]
+up = 10
 board_square_count = 120  # 12x10
 valid_pieces = 'pNBRQK'
 valid_colors = 'wb'
@@ -23,7 +25,18 @@ start_board = {0: 'FF',   1: 'FF',   2: 'FF',   3: 'FF',   4: 'FF',   5: 'FF',  
              100: 'FF', 101: 'FF', 102: 'FF', 103: 'FF', 104: 'FF', 105: 'FF', 106: 'FF', 107: 'FF', 108: 'FF', 109: 'FF',   # [100, 101, 102, 103, 104, 105, 106, 107, 108, 109]
              110: 'FF', 111: 'FF', 112: 'FF', 113: 'FF', 114: 'FF', 115: 'FF', 116: 'FF', 117: 'FF', 118: 'FF', 119: 'FF'}   # [110, 111, 112, 113, 114, 115, 116, 117, 118, 119]
 
-# note - all other squares are "off the board" - this is more efficient when checking for moves vs 8x8 (apparently)
+
+# This feels out of place lol, but more robust kinda
+black_pawn_start = []
+white_pawn_start = []
+for square_index, piece_code in start_board.items():
+    if piece_code == 'bp':
+        black_pawn_start.append(square_index)
+    if piece_code == 'wp':
+        white_pawn_start.append(square_index)
+
+
+# note - all other squares are "off the board" - this is more efficient when checking for moves vs 8x8
 real_board_squares = [21, 22, 23, 24, 25, 26, 27, 28,
                       31, 32, 33, 34, 35, 36, 37, 38,
                       41, 42, 43, 44, 45, 46, 47, 48,

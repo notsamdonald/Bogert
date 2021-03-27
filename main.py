@@ -221,10 +221,11 @@ def canvasClick(event):
 
         correct_index = 8*(boardIndex//8) + 7-(boardIndex%8)  # Fixme - janky mapping between different board representations
         real_square_id = s.real_board_squares[::-1][correct_index]
-        piece = board.get_square_piece(real_square_id)
+        color, piece = board.get_square_info(real_square_id)
 
-        if (piece == None): return
-        if ((board.turn and islower(str(piece))) or (not board.turn and isupper(str(piece)))): return
+
+        # Check if it is your piece
+        if (color != board.turn): return
 
         # draw green square over tile
         # boardCanvas.draw.rect(pygScreen, (0,255,0), (tileScrX + 2, tileScrY + 2, 57, 57), 4)
@@ -341,9 +342,9 @@ def canvasRelease(event):
         return
 
 
-    if (board.turn and p1 != "Human"):
+    if (board.turn == 'w' and p1 != "Human"):
         getAIMove(turn='White')
-    elif (not board.turn and p2 != "Human"):
+    elif (board.turn == 'b' and p2 != "Human"):
         getAIMove(turn='Black')
 
 
@@ -431,6 +432,7 @@ def getAIMove(turn):
                         root.update()
                     lastpvmovestr = pvmovestr
     # pvmove = analysis.info['pv'][0]
+
 
     if turn == 'white':
         move = AI_4(board)
@@ -533,7 +535,7 @@ def redrawTile(x, y):
 
     if (piece == 'r'): pieceFile = 'pieces\BR.png'  # black rook
     if (piece == 'n'): pieceFile = 'pieces\BN.png'  # black knight
-    if (piece == 'b'): pieceFile = 'pieces\BB.png'  # black bishop
+    if (piece == 'b'): pieceFile = 'pieces\BB_2.png'  # black bishop
     if (piece == 'q'): pieceFile = 'pieces\BQ.png'  # black queen
     if (piece == 'k'): pieceFile = 'pieces\BK.png'  # black king
     if (piece == 'p'): pieceFile = 'pieces\BP.png'  # black pawn
@@ -601,7 +603,7 @@ def main():
     gameStateLabel.pack()
     gameStateLabel.place(x=0, y=480)
 
-    p1 = "AI"
+    p1 = "Human"
     p2 = "AI"
 
     """
@@ -641,6 +643,9 @@ def initGame(player1, player2):
     board = chess.Board()
     test_fen = 'bn6/1q6/2r5/8/8/5R2/5NQ1/7B w - - 0 1'
     test_fen = 'nnnnnnnn/bbbbbbbb/nnnnnnnn/bbbbbbbb/BBBBBBBB/NNNNNNNN/BBBBBBBB/NNNNNNNN w - - 0 1'  # lol
+    test_fen = 'rnbq1bnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQ1BNR w - - 0 1'
+    test_fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+
     board = GameInstance(starting_fen=test_fen)
     gameinprogress = True
     gameStateVar.set("White to move.")
