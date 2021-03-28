@@ -137,6 +137,7 @@ class GameInstance:
                 self.get_all_possible_moves()
                 moves = self.possible_moves
                 moves = [move for move in moves if (move[1] in squares_to_stop_check or 'K' in move[2])]
+
                 print('downsampled for moves that remove check!')
                 print(squares_to_stop_check)
                 print(moves)
@@ -150,11 +151,25 @@ class GameInstance:
             self.get_all_possible_moves()
             moves = self.possible_moves
 
-        return moves
+        #moves = [move for move in moves if (move[0] not in self.pins.keys() or (len(self.pins[move[0]]) == 1 and (self.pins[move[0]][1] % abs(move[1]-move[0]) == 0)))]  # FIXME - can actually take the piece causing the pin! (so long as its the sole piece pinning it)
+
+        filtered_moves = []
+        for move in moves:
+            if move[0] not in self.pins.keys():
+                filtered_moves.append(move)
+            elif len(self.pins[move[0]]) == 1:
+                # FIXME - dont think multiple pins can be occouring on the same piece??
+                dir = self.pins[move[0]][0]
+                op_dir = -dir
+                delta_move = move[1] - move[0]
+                if delta_move % dir == 0 or delta_move % op_dir == 0:
+                    filtered_moves.append(move)
+
+        return filtered_moves
 
     def check_pins_and_checks(self, square):
 
-        pin_list = []
+        pin_list = {}
         check_list = []
         is_in_check = False
 
@@ -190,8 +205,13 @@ class GameInstance:
                     elif color_f == enemy_color and possible_pin:
                         # second piece in direction (enemy) - possible pin
                         if direction in pin_dir[piece_f][0] and step <= pin_dir[piece_f][1]:
+
                             # check if piece can deliver a pin
-                            pin_list.append(possible_pin)
+                            if possible_pin[0] in pin_list:
+                                pin_list[possible_pin[0]].append(direction)
+                            else:
+                                pin_list[possible_pin[0]] = [direction]
+
                         break
 
                     elif color_f == enemy_color and not possible_pin:

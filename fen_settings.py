@@ -6,6 +6,16 @@ linear_dirs = [-10, -1, 10, 1]
 diagonal_dirs = [-11, -9, 9, 11]
 knight_moves = [-21, -19, -12, -8, 8, 12, 19, 21]  # Up-up-left, up-up-right ......
 
+opposite_dir_dict = {-10: 10,
+                     10: -10,
+                     -1: 1,
+                     1: -1,
+                     -11: 9,
+                     9: -11,
+                     -9: 11,
+                     11: -9}
+
+
 diagonals = [9, 11]
 up = 10
 board_square_count = 120  # 12x10

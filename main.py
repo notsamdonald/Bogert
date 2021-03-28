@@ -644,6 +644,7 @@ def initGame(player1, player2):
     test_fen = 'nnnnnnnn/bbbbbbbb/nnnnnnnn/bbbbbbbb/BBBBBBBB/NNNNNNNN/BBBBBBBB/NNNNNNNN w - - 0 1'  # lol
     test_fen = 'rnbq1bnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQ1BNR w - - 0 1'
     test_fen = '4k3/8/8/8/8/8/8/2KQR3 w - - 0 1'
+    test_fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
 
     board = GameInstance(starting_fen=test_fen)
     gameinprogress = True
