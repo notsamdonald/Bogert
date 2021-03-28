@@ -86,7 +86,6 @@ class GameInstance:
                 self.en_passant_square = None
                 self.king_location[piece_color] = end_square
 
-
         else:
             self.board[end_square] = piece_moved
             self.board[start_square] = '--'
@@ -495,7 +494,6 @@ class GameInstance:
                         break  # break out of that direction
                 else:
                     break
-
 
     def init_king_positions(self):
         """
