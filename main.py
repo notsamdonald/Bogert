@@ -271,7 +271,7 @@ def canvasMotion(event):
     clickEndSquare = boardIndex
     move = chess.Move(from_square=clickStartSquare, to_square=boardIndex)
     islegal = False
-    for legalmove in board.get_legal_moves():
+    for legalmove in board.get_all_legal_moves():
         if str(move) == str(legalmove): islegal = True
     if islegal:
         # draw green square over moused over square
@@ -315,7 +315,8 @@ def canvasRelease(event):
 
     move = chess.Move(from_square=startSquare, to_square=endSquare)
     islegal = False
-    for legalmove in board.get_legal_moves():
+
+    for legalmove in board.get_all_legal_moves():
         decoded_move = s.square_id_to_algebraic[legalmove[0]]+s.square_id_to_algebraic[legalmove[1]]
         #print(decoded_move)
         if str(move) == str(decoded_move):
@@ -323,7 +324,6 @@ def canvasRelease(event):
             break
     if islegal:
         board.make_move(legalmove)
-        #board.turn_over()
         if (board.turn == 'w'):
             gameStateVar.set("White to move.")
         else:
@@ -332,7 +332,7 @@ def canvasRelease(event):
     drawBoard()
     drawPieces()
     root.update()
-    legalmoves = board.get_legal_moves()
+    legalmoves = board.get_all_legal_moves()
     count = 0
     for x in legalmoves:
         count += 1
@@ -381,9 +381,8 @@ def AI_3(board):
 def AI_4(board):
     'me'
     # WIP to test new framework
-    board.get_all_possible_moves()
-    move = random.choice(board.possible_moves)
-    print("{} moves found".format(len(board.possible_moves)))
+    move = random.choice(board.get_all_legal_moves())
+    print(board.get_all_legal_moves())
     return move
 
     #board.make_move(move)
@@ -451,8 +450,8 @@ def getAIMove(turn):
         drawPieces()
 
     #legalmoves = board.legal_moves
-    board.get_all_possible_moves()
-    legalmoves = board.possible_moves
+    legalmoves = board.get_all_legal_moves()
+    #legalmoves = board.possible_moves
 
     count = 0
 
@@ -644,7 +643,7 @@ def initGame(player1, player2):
     test_fen = 'bn6/1q6/2r5/8/8/5R2/5NQ1/7B w - - 0 1'
     test_fen = 'nnnnnnnn/bbbbbbbb/nnnnnnnn/bbbbbbbb/BBBBBBBB/NNNNNNNN/BBBBBBBB/NNNNNNNN w - - 0 1'  # lol
     test_fen = 'rnbq1bnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQ1BNR w - - 0 1'
-    test_fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'
+    test_fen = '4k3/8/8/8/8/8/8/2KQR3 w - - 0 1'
 
     board = GameInstance(starting_fen=test_fen)
     gameinprogress = True
