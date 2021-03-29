@@ -603,7 +603,7 @@ def main():
     gameStateLabel.place(x=0, y=480)
 
     p1 = "Human"
-    p2 = "AI"
+    p2 = "Human"
 
     """
     if (p1 == "AI"):

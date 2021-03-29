@@ -2,6 +2,11 @@
 # note - this is using Square list method (see https://en.wikipedia.org/wiki/Board_representation_(computer_chess))
 # TODO - rename this from fen to just settings?
 
+
+
+
+
+
 linear_dirs = [-10, -1, 10, 1]
 diagonal_dirs = [-11, -9, 9, 11]
 knight_moves = [-21, -19, -12, -8, 8, 12, 19, 21]  # Up-up-left, up-up-right ......
@@ -35,15 +40,27 @@ start_board = {0: 'FF',   1: 'FF',   2: 'FF',   3: 'FF',   4: 'FF',   5: 'FF',  
              100: 'FF', 101: 'FF', 102: 'FF', 103: 'FF', 104: 'FF', 105: 'FF', 106: 'FF', 107: 'FF', 108: 'FF', 109: 'FF',   # [100, 101, 102, 103, 104, 105, 106, 107, 108, 109]
              110: 'FF', 111: 'FF', 112: 'FF', 113: 'FF', 114: 'FF', 115: 'FF', 116: 'FF', 117: 'FF', 118: 'FF', 119: 'FF'}   # [110, 111, 112, 113, 114, 115, 116, 117, 118, 119]
 
-
+# Pawn specific info
 # This feels out of place lol, but more robust kinda
 black_pawn_start = []
 white_pawn_start = []
+black_pawn_end = []
+white_pawn_end = []
+
+black_pawn_en_passant_cords = []
+white_pawn_en_passant_cords = []
+
 for square_index, piece_code in start_board.items():
     if piece_code == 'bp':
         black_pawn_start.append(square_index)
+        black_pawn_en_passant_cords.append(square_index+10)
+        white_pawn_end.append(square_index-10)
     if piece_code == 'wp':
         white_pawn_start.append(square_index)
+        white_pawn_en_passant_cords.append(square_index-10)
+        black_pawn_end.append(square_index+10)
+
+
 
 
 # note - all other squares are "off the board" - this is more efficient when checking for moves vs 8x8
