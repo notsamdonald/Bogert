@@ -4,6 +4,7 @@ import config as c
 import random
 import time
 from numba import jit
+import chess
 
 class GameInstance:
     def __init__(self, starting_fen):
@@ -725,7 +726,34 @@ print("{} secs".format(t1-t0))
 print("{} boards/sec".format(move_count/(t1-t0)))
 
 
-# Randomly making moves to test
+def move_counter2(board, depth):
+    if depth == 0:
+        return 1
+
+    else:
+        moves = board.legal_moves
+        count = 0
+
+        for move in moves:
+            board.push(move)
+            count += move_counter2(board, depth-1)
+            board.pop()
+
+    return count
+
+
+
+
+print('starting pychess test')
+board = chess.Board()
+t0 = time.time()
+move_count = move_counter2(board, depth=4)
+t1 = time.time()
+print("{} boards found".format(move_count))
+print("{} secs".format(t1-t0))
+print("{} boards/sec".format(move_count/(t1-t0)))
+
+
 """
 while 1:
     test_instance.get_all_possible_moves()
