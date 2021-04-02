@@ -533,6 +533,44 @@ class GameInstance:
         # note - currently not doing any pin checks! pseudo legal move generator.
         color_s, piece_s = self.get_square_info(square)  # start square contents
 
+
+
+        # note - come back to this in the morning! <3 
+        """
+        # Castling:
+        # Can't castle if in check, if square between K or R is under attack, or if castling rights are broken
+        if not self.is_in_check:
+            king_castle = 'K' if self.is_whites_turn else 'k'
+            queen_castle = 'Q' if self.is_whites_turn else 'q'
+
+            # Castle King side
+            if king_castle in self.castling_rights and all(x == '--' for x in (self.board[square + 1], self.board[square + 2])):
+
+                # Check if squares are in check or not
+                is_in_check_1 = self.check_for_checks(square + 1)
+                is_in_check_2 = self.check_for_checks(square + 2)
+
+                if not (is_in_check_1 or is_in_check_2):
+                    moves.append((square, square + 2, 'ck', 40))
+
+            # Castle Queen side
+            if queen_castle in self.castling_rights and all(x == '--' for x in (self.board[square - 1], self.board[square - 2], self.board[square - 3])):
+
+                # Check if squares are in check or not, king doesn't pass the knight square on queenside castle so no use in checking that square
+                is_in_check_1 = self.check_for_checks(square - 1)
+                is_in_check_2 = self.check_for_checks(square - 2)
+
+                if not (is_in_check_1 or is_in_check_2):
+                    moves.append((square, square - 2, 'cq', 40))
+
+        """
+
+
+
+
+
+
+
         for direction in s.diagonal_dirs + s.linear_dirs:  # FIXME - this shouldn't be in the loop for rook, bishop, queen
             for i in range(1, 2):
                 end_square = square + direction * i  # moving in the direction one step
@@ -714,13 +752,13 @@ def move_counter(game, depth):
 
 
 
-test_fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w - - 0 1'
+test_fen = '1k1r4/pp1b1R2/3q2pp/4p3/2B5/4Q3/PPP2B2/2K5 b - - 0 1'
 test_instance = GameInstance(starting_fen=test_fen)
 
 t0 = time.time()
 move_count = move_counter(test_instance, depth=4)
 t1 = time.time()
-
+my_time = t1-t0
 print("{} boards found".format(move_count))
 print("{} secs".format(t1-t0))
 print("{} boards/sec".format(move_count/(t1-t0)))
@@ -752,7 +790,9 @@ t1 = time.time()
 print("{} boards found".format(move_count))
 print("{} secs".format(t1-t0))
 print("{} boards/sec".format(move_count/(t1-t0)))
+their_time = t1-t0
 
+print("{0:.2f}% speed up!".format(100*((their_time/my_time)-1)))
 
 """
 while 1:
